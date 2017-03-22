@@ -20,5 +20,6 @@ Analyze the JSON response:
 ## Installation
 
 - `git clone https://github.com/indiependente/goweather.git`
+- `cd goweather`
 - `go build`
 - `./goweather`
