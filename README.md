@@ -17,9 +17,10 @@ Analyze the JSON response:
 - `temp` : the current temperature in Kelvin
 - `took` : amount of time elapsed in ms
 
-## Installation
+## Installation and usage
 
 - `git clone https://github.com/indiependente/goweather.git`
 - `cd goweather`
 - `go build`
 - `./goweather`
+- `curl localhost:8080/weather/london`
