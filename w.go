@@ -43,7 +43,11 @@ func main() {
         w.Header().Set("Content-Type", "application/json; charset=utf-8")
         json.NewEncoder(w).Encode(map[string]interface{}{
             "city": city,
-            "temp": temp,
+            "temp": map[string]interface{}{
+                "K" : temp,
+                "C" : kelvinToCelsius(temp),
+                "F" : kelvinToFahrenheit(temp),
+            },
             "took": time.Since(begin).String(),
         })
 
@@ -137,4 +141,13 @@ func (w multiWeatherProvider) temperature(city string) (float64, error) {
     }
 
     return sum / float64(len(w)), nil
+}
+
+
+func kelvinToCelsius(t float64) (float64) {
+    return t - 273.15
+}
+
+func kelvinToFahrenheit(t float64) (float64) {
+    return t * 9/5 - 459.67
 }
