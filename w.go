@@ -18,15 +18,16 @@ type openWeatherMap struct {
 type weatherUnderground struct {
     apiKey string
 }
+type yahooWeather struct {}
 
 type multiWeatherProvider []weatherProvider
 
 func main() {
-    // http.HandleFunc("/hello", hello)
-
+    
     mw := multiWeatherProvider{
         openWeatherMap{apiKey: "a9bcf4f4899aaab6b7194e3f674f162b"},
         weatherUnderground{apiKey: "2508132ae0c7601a"},
+        yahooWeather{},
     }
 
     http.HandleFunc("/weather/", func(w http.ResponseWriter, r *http.Request) {
@@ -56,9 +57,6 @@ func main() {
     http.ListenAndServe(":8080", nil)
 }
 
-// func hello(w http.ResponseWriter, r *http.Request) {
-//     w.Write([]byte("hello!"))
-// }
 
 func (w openWeatherMap) temperature(city string) (float64, error) {
     resp, err := http.Get("http://api.openweathermap.org/data/2.5/weather?APPID=" + w.apiKey + "&q=" + city)
@@ -100,12 +98,48 @@ func (w weatherUnderground) temperature(city string) (float64, error) {
         return 0, err
     }
 
-    kelvin := d.Observation.Celsius + 273.15
+    kelvin := d.Observation.Celsius + 273.15 + 10.0 // +10.0 seems to fix weatherUnderground's bad forecast
     log.Printf("weatherUnderground: %s: %.2f", city, kelvin)
     return kelvin, nil
 }
 
+func (w yahooWeather) temperature(city string) (float64, error) {
+    apiurl := "https://query.yahooapis.com/v1/public/yql?q=select%20item.condition%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22"+city+"%22)&format=json"
+    resp, err := http.Get(apiurl)
+    if err != nil {
+        return 0, err
+    }
 
+    defer resp.Body.Close()
+
+    var d struct {
+    Query struct {
+        Count int `json:"count"`
+        Created time.Time `json:"created"`
+        Lang string `json:"lang"`
+        Results struct {
+            Channel struct {
+                Item struct {
+                    Condition struct {
+                        Code string `json:"code"`
+                        Date string `json:"date"`
+                        Temp int `json:"temp,string"`
+                        Text string `json:"text"`
+                    } `json:"condition"`
+                } `json:"item"`
+            } `json:"channel"`
+        } `json:"results"`
+    } `json:"query"`
+}
+
+    if err := json.NewDecoder(resp.Body).Decode(&d); err != nil {
+        return 0, err
+    }
+
+    kelvin := fahrenheitToKelvin(float64(d.Query.Results.Channel.Item.Condition.Temp))
+    log.Printf("Yahoo! Weather: %s: %.2f", city, kelvin)
+    return kelvin, nil
+}
 
 func (w multiWeatherProvider) temperature(city string) (float64, error) {
     // Make a channel for temperatures, and a channel for errors.
@@ -150,4 +184,8 @@ func kelvinToCelsius(t float64) (float64) {
 
 func kelvinToFahrenheit(t float64) (float64) {
     return t * 9/5 - 459.67
+}
+
+func fahrenheitToKelvin(t float64) (float64) {
+    return (t + 459.67) * 5/9
 }
