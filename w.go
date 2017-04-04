@@ -32,7 +32,7 @@ func main() {
     
     mw := multiWeatherProvider{
         openWeatherMap{apiKey : "a9bcf4f4899aaab6b7194e3f674f162b"},
-        weatherUnderground{apiKey : "2508132ae0c7601a"},
+      //  weatherUnderground{apiKey : "2508132ae0c7601a"}, // its forecast is too unaccurate
         yahooWeather{},
         darkSky{apiKey : "1ddf4420f72cf59d18f3948f4af16415"},
     }
